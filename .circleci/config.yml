@@ -1,13 +1,77 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
-version: 2.1
-# Use a package of configuration called an orb.
-orbs:
-  # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
-# Orchestrate or schedule a set of jobs
-workflows:
-  # Name the workflow "welcome"
-  welcome:
-    # Run the welcome/run job in its own container
-    jobs:
-      - welcome/run
+description: |
+  Install and configure aws-cli and execute aws cloudformation commands
+executor:
+  name: default
+  python-version: 3.7.4
+parameters:
+  aws-access-key-id:
+    default: AWS_ACCESS_KEY_ID
+    description: |
+      AWS access key id for IAM role. Set this to the name of
+      the environment variable you will use to hold this
+      value, i.e. AWS_ACCESS_KEY.
+    type: env_var_name
+  aws-region:
+    default: AWS_DEFAULT_REGION
+    description: |
+      Env var of AWS region to operate in
+      (defaults to AWS_DEFAULT_REGION)
+    type: env_var_name
+  aws-secret-access-key:
+    default: AWS_SECRET_ACCESS_KEY
+    description: |
+      AWS secret key for IAM role. Set this to the name of
+      the environment variable you will use to hold this
+      value, i.e. $AWS_SECRET_ACCESS_KEY.
+    type: env_var_name
+  branch:
+    default: master
+    description: |
+      Git branch of retrieving GitHub URL of CloudFormation
+       template file
+    type: string
+  configure-default-region:
+    default: true
+    description: |
+      Some AWS actions don't require a region; set this to
+      false if you do not want to store a default region
+      in ~/.aws/config
+    type: boolean
+  extra-arguments:
+    default: ''
+    description: |
+      Optional additional arguments to pass to the `aws
+      cloudformation create-stack` command
+    type: string
+  git-url:
+    default: ''
+    description: |
+      GitHub URL to retrieve CloudFormation template
+    type: string
+  profile-name:
+    default: default
+    description: Profile name to be configured.
+    type: string
+  stack-name:
+    description: |
+      CloudFormation stack name
+    type: string
+  template-file-path:
+    description: |
+      CloudFormation template file path
+    type: string
+steps:
+  - aws-cli/install
+  - aws-cli/configure:
+      aws-access-key-id: <<parameters.aws-access-key-id>>
+      aws-region: <<parameters.aws-region>>
+      aws-secret-access-key: <<parameters.aws-secret-access-key>>
+      configure-default-region: <<parameters.configure-default-region>>
+      profile-name: <<parameters.profile-name>>
+  - checkout
+  - create-stack:
+      branch: <<parameters.branch>>
+      extra-arguments: <<parameters.extra-arguments>>
+      git-url: <<parameters.git-url>>
+      stack-name: <<parameters.stack-name>>
+      template-file-path: <<parameters.template-file-path>>
